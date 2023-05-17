@@ -21,7 +21,7 @@ async def start_command(message: types.Message):
 # Обработчик текстовых сообщений.
 @dp.message_handler(content_types=types.ContentType.TEXT)
 async def echo_message(message: types.Message):
-    await message.answer(message.text)
+    await message.answer("Не трогай меня, я в разработке")
 
 # Запускаем бота.
 if __name__ == '__main__':
