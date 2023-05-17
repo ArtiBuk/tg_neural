@@ -2,7 +2,7 @@ import logging
 from aiogram import Bot, Dispatcher, types
 import json
 from aiogram.utils import executor
-from parser_yandex import search_yandex
+from parser_google import search_google
 
 # Включаем логирование, чтобы видеть сообщения об ошибках.
 logging.basicConfig(level=logging.INFO)
@@ -23,7 +23,7 @@ async def start_command(message: types.Message):
 @dp.message_handler(content_types=types.ContentType.TEXT)
 async def search_and_send_links(message: types.Message):
     query = message.text
-    links = search_yandex(query)
+    links = search_google(query,3)
     response = '\n'.join(links)
     await message.answer(response)
 
