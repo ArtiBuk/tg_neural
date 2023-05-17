@@ -2,6 +2,7 @@ import logging
 from aiogram import Bot, Dispatcher, types
 import json
 from aiogram.utils import executor
+from parser_yandex import search_yandex
 
 # Включаем логирование, чтобы видеть сообщения об ошибках.
 logging.basicConfig(level=logging.INFO)
@@ -20,9 +21,12 @@ async def start_command(message: types.Message):
 
 # Обработчик текстовых сообщений.
 @dp.message_handler(content_types=types.ContentType.TEXT)
-async def echo_message(message: types.Message):
-    await message.answer("Не трогай меня, я в разработке")
+async def search_and_send_links(message: types.Message):
+    query = message.text
+    links = search_yandex(query)
+    response = '\n'.join(links)
+    await message.answer(response)
 
 # Запускаем бота.
 if __name__ == '__main__':
-    executor.start_polling(dp,skip_updates=True)
+    executor.start_polling(dp, skip_updates=True)
