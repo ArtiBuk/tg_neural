@@ -5,6 +5,7 @@ from bs4 import BeautifulSoup
 from urllib.parse import unquote_plus, urlparse
 from fake_useragent import UserAgent
 import re
+import json
 
 
 def search_google(query, limit):
@@ -80,6 +81,8 @@ def remove_extra_spaces(text):
 
 
 def process_text(text):
+    # Удаление всех латинских символов
+    text = re.sub(r'[a-zA-Z]', '', text)
     # Приведение всех слов к нижнему регистру
     text = text.lower()
     text = remove_links(text)
@@ -110,9 +113,16 @@ def save_page_content(url, filename):
     if not os.path.exists(text_folder):
         os.makedirs(text_folder)
 
-    # Сохраняем обработанный текст в текстовый файл в папке "text"
-    with open(os.path.join(text_folder, filename), 'w', encoding='utf-8') as file:
-        file.write(processed_text)
+    # Разбиваем текст на части длиной не более 1000 символов
+    chunks = [processed_text[i:i+1000] for i in range(0, len(processed_text), 1000)]
+
+    # Сохраняем части текста в отдельные файлы
+    for i, chunk in enumerate(chunks, start=1):
+        chunk_filename = f"{os.path.splitext(filename)[0]}_{i}.json"
+        data = {"text": chunk}
+        with open(os.path.join(text_folder, chunk_filename), 'w', encoding='utf-8') as file:
+            json.dump(data, file, ensure_ascii=False)
+        print(f"Часть {i} сохранена в файл {chunk_filename}")
 
 
 # Пример использования функции
@@ -120,6 +130,6 @@ user_query = 'значения слова привет'
 search_results = search_google(user_query, limit=3)
 print(search_results)
 for i, link in enumerate(search_results, start=1):
-    filename = f"page_{i}.txt"
+    filename = f"page_{i}.json"  # изменение расширения файла
     save_page_content(link, filename)
     print(f"Страница {i} сохранена в файл {filename}")
