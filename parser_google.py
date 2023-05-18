@@ -1,37 +1,10 @@
-# import time
-# import requests
-# from bs4 import BeautifulSoup
-# import webbrowser
-
-# def search_yandex(query):
-#     # Разделяем слова запроса и объединяем их с помощью %20
-#     query_words = query.split()
-#     url_query = '%20'.join(query_words)
-
-#     # Формируем URL для запроса в Яндекс
-#     url = f'https://www.google.ru/search?q={url_query}'
-
-#     # Открываем страницу поиска в браузере
-#     webbrowser.open(url)
-
-#     # Добавляем задержку в 1 секунду перед каждым запросом
-#     time.sleep(1)
-
-#     # Возвращаем URL страницы поиска
-#     return url
-
-# # Пример использования функции
-# user_query = 'как стать бэкенд-разработчиком'
-# search_url = search_yandex(user_query)
-# print("Открыта страница поиска:", search_url)
-
-
+import os
 import time
 import requests
 from bs4 import BeautifulSoup
 from urllib.parse import unquote_plus, urlparse
-import random
 from fake_useragent import UserAgent
+import re
 
 
 def search_google(query, limit):
@@ -42,9 +15,8 @@ def search_google(query, limit):
 
     # Отправляем GET-запрос и получаем HTML-страницу с результатами поиска
     try:
-        response = requests.get(url,headers={'User-Agent': UserAgent().googlechrome})
+        response = requests.get(url, headers={'User-Agent': UserAgent().googlechrome})
         response.raise_for_status()
-        print(UserAgent().googlechrome)
     except requests.exceptions.RequestException as e:
         print(f"Ошибка при выполнении запроса: {e}")
         return []
@@ -66,7 +38,7 @@ def search_google(query, limit):
             cleaned_url = f"{parsed_url.scheme}://{parsed_url.netloc}{parsed_url.path}"
             try:
                 # Проверяем доступность страницы перед добавлением ссылки в результаты
-                response = requests.get(cleaned_url,headers={'User-Agent': UserAgent().googlechrome})
+                response = requests.get(cleaned_url, headers={'User-Agent': UserAgent().googlechrome})
                 response.raise_for_status()
                 result_links.append(cleaned_url)
                 count += 1
@@ -81,10 +53,46 @@ def search_google(query, limit):
     return result_links[:limit]
 
 
+def remove_links(text):
+    # Удаление ссылок из текста
+    text_without_links = re.sub(r"http\S+|www\S+|\S+\.\S+", "<URL>", text)
+    return text_without_links
+
+
+def remove_special_characters(text):
+    # Удаление специальных символов
+    special_characters = ["&", "=", "»"]
+    for char in special_characters:
+        text = text.replace(char, " ")
+    return text
+
+
+def remove_formatting(text):
+    # Удаление форматирования
+    text = text.replace("\n", " ")
+    return text
+
+
+def remove_extra_spaces(text):
+    # Удаление лишних пробелов
+    text = " ".join(text.split())
+    return text
+
+
+def process_text(text):
+    # Приведение всех слов к нижнему регистру
+    text = text.lower()
+    text = remove_links(text)
+    text = remove_special_characters(text)
+    text = remove_formatting(text)
+    text = remove_extra_spaces(text)
+    return text
+
+
 def save_page_content(url, filename):
     # Отправляем GET-запрос и получаем HTML-страницу
     try:
-        response = requests.get(url,headers={'User-Agent': UserAgent().googlechrome})
+        response = requests.get(url, headers={'User-Agent': UserAgent().googlechrome})
         response.raise_for_status()
     except requests.exceptions.RequestException as e:
         print(f"Ошибка при выполнении запроса: {e}")
@@ -93,17 +101,23 @@ def save_page_content(url, filename):
     # Используем BeautifulSoup для парсинга HTML-страницы
     soup = BeautifulSoup(response.text, 'html.parser')
 
-    # Извлекаем текст с веб-страницы и удаляем лишние разрывы
-    text = soup.get_text().replace('\n\n', ' ')
+    # Извлекаем текст с веб-страницы и обрабатываем его
+    text = soup.get_text()
+    processed_text = process_text(text)
 
-    # Сохраняем текст в текстовый файл
-    with open(filename, 'w', encoding='utf-8') as file:
-        file.write(text)
+    # Создаем папку "text", если она не существует
+    text_folder = os.path.join(os.path.dirname(__file__), 'text')
+    if not os.path.exists(text_folder):
+        os.makedirs(text_folder)
+
+    # Сохраняем обработанный текст в текстовый файл в папке "text"
+    with open(os.path.join(text_folder, filename), 'w', encoding='utf-8') as file:
+        file.write(processed_text)
 
 
 # Пример использования функции
-user_query = 'двенадцати струнная гитара что это такое?'
-search_results = search_google(user_query, limit=2)
+user_query = 'значения слова привет'
+search_results = search_google(user_query, limit=3)
 print(search_results)
 for i, link in enumerate(search_results, start=1):
     filename = f"page_{i}.txt"
