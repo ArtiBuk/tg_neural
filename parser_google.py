@@ -6,8 +6,14 @@ from urllib.parse import unquote_plus, urlparse
 from fake_useragent import UserAgent
 import re
 import json
+from sumy.parsers.plaintext import PlaintextParser
+from sumy.nlp.tokenizers import Tokenizer
+from sumy.summarizers.lsa import LsaSummarizer
+from sumy.nlp.stemmers import Stemmer
+from nltk.corpus import stopwords
 
-
+LANGUAGE = "russian"
+stemmer = Stemmer(LANGUAGE)
 def search_google(query, limit):
     # Разделяем слова запроса и объединяем их с помощью %20
     query_words = query.split()
@@ -92,6 +98,18 @@ def process_text(text):
     return text
 
 
+def summarize_text(text, sentences_count):
+    parser = PlaintextParser.from_string(text, Tokenizer(LANGUAGE))
+    summarizer = LsaSummarizer(stemmer)
+    summarizer.stop_words = set(stopwords.words('russian'))
+
+    summary = []
+    for sentence in summarizer(parser.document, sentences_count):
+        summary.append(str(sentence))
+
+    return ' '.join(summary)
+
+
 def save_page_content(url, filename):
     # Отправляем GET-запрос и получаем HTML-страницу
     try:
@@ -113,23 +131,19 @@ def save_page_content(url, filename):
     if not os.path.exists(text_folder):
         os.makedirs(text_folder)
 
-    # Разбиваем текст на части длиной не более 1000 символов
-    chunks = [processed_text[i:i+1000] for i in range(0, len(processed_text), 1000)]
+    # Создаем выжимку текста
+    summarized_text = summarize_text(processed_text, sentences_count=10)
 
-    # Сохраняем части текста в отдельные файлы
-    for i, chunk in enumerate(chunks, start=1):
-        chunk_filename = f"{os.path.splitext(filename)[0]}_{i}.json"
-        data = {"text": chunk}
-        with open(os.path.join(text_folder, chunk_filename), 'w', encoding='utf-8') as file:
-            json.dump(data, file, ensure_ascii=False)
-        print(f"Часть {i} сохранена в файл {chunk_filename}")
+    # Сохраняем текст в файл
+    data = {"text": summarized_text}
+    with open(os.path.join(text_folder, filename), 'w', encoding='utf-8') as file:
+        json.dump(data, file, ensure_ascii=False)
+    print(f"Файл {filename} сохранен")
 
 
-# Пример использования функции
 user_query = 'значения слова привет'
-search_results = search_google(user_query, limit=3)
+search_results = search_google(user_query, limit=4)
 print(search_results)
 for i, link in enumerate(search_results, start=1):
     filename = f"page_{i}.json"  # изменение расширения файла
     save_page_content(link, filename)
-    print(f"Страница {i} сохранена в файл {filename}")
