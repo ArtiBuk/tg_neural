@@ -27,7 +27,7 @@ async def search_and_send_links(message: types.Message):
 
     answer = message_processing(query)
 
-    await message.answer(answer)
+    await message.reply(answer)
 
 # Запускаем бота.
 if __name__ == '__main__':

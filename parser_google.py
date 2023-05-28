@@ -113,21 +113,17 @@ def save_page_content(url):
     return processed_text
 
 def message_processing(query):
-    search_results = search_google(query, limit=1)
+    search_results = search_google(query, limit=3)
     all_texts = ""
     max_word_count = 0
     for i, link in enumerate(search_results, start=1):
         text = save_page_content(link)
         if text:
-            all_texts += text
-            word_count = len(text.split())
-            if word_count > max_word_count:
-                max_word_count = word_count
-    print(all_texts)
+            all_texts += text + "\n"
+            # word_count = len(text.split())
+            # if word_count > max_word_count:
+            #     max_word_count = word_count
     answer = summarizer(all_texts)
-    print("Max word count:", max_word_count)
+    print(all_texts)
     return answer
-# qwerty = 'the meaning of the word hello'
-# anc = message_processing(qwerty)
-# print (anc)
 
