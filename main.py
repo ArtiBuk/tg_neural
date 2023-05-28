@@ -2,7 +2,7 @@ import logging
 from aiogram import Bot, Dispatcher, types
 import json
 from aiogram.utils import executor
-from parser_google import search_google
+from parser_google import message_processing
 
 # Включаем логирование, чтобы видеть сообщения об ошибках.
 logging.basicConfig(level=logging.INFO)
@@ -22,10 +22,12 @@ async def start_command(message: types.Message):
 # Обработчик текстовых сообщений.
 @dp.message_handler(content_types=types.ContentType.TEXT)
 async def search_and_send_links(message: types.Message):
+
     query = message.text
-    links = search_google(query,3)
-    response = '\n'.join(links)
-    await message.answer(response)
+
+    answer = message_processing(query)
+
+    await message.answer(answer)
 
 # Запускаем бота.
 if __name__ == '__main__':

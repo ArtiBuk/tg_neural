@@ -7,6 +7,7 @@ from fake_useragent import UserAgent
 import re
 import json
 from nltk.corpus import stopwords
+from neuron import summarizer
 
 LANGUAGE = "russian"
 
@@ -111,21 +112,22 @@ def save_page_content(url):
     processed_text = process_text(text)
     return processed_text
 
-
-user_query = 'meaning of "hellow"'
-search_results = search_google(user_query, limit=1)
-all_texts = ""
-max_word_count = 0
-for i, link in enumerate(search_results, start=1):
-    text = save_page_content(link)
-    if text:
-        all_texts += text + "\n"
-        word_count = len(text.split())
-        if word_count > max_word_count:
-            max_word_count = word_count
-
-print("All texts:")
-print(all_texts)
-print("Max word count:", max_word_count)
-
+def message_processing(query):
+    search_results = search_google(query, limit=1)
+    all_texts = ""
+    max_word_count = 0
+    for i, link in enumerate(search_results, start=1):
+        text = save_page_content(link)
+        if text:
+            all_texts += text
+            word_count = len(text.split())
+            if word_count > max_word_count:
+                max_word_count = word_count
+    print(all_texts)
+    answer = summarizer(all_texts)
+    print("Max word count:", max_word_count)
+    return answer
+# qwerty = 'the meaning of the word hello'
+# anc = message_processing(qwerty)
+# print (anc)
 
