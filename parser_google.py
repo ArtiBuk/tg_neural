@@ -5,8 +5,15 @@ from bs4 import BeautifulSoup
 from urllib.parse import unquote_plus, urlparse
 from fake_useragent import UserAgent
 import re
+import json
+from sumy.parsers.plaintext import PlaintextParser
+from sumy.nlp.tokenizers import Tokenizer
+from sumy.summarizers.lsa import LsaSummarizer
+from sumy.nlp.stemmers import Stemmer
+from nltk.corpus import stopwords
 
-
+LANGUAGE = "russian"
+stemmer = Stemmer(LANGUAGE)
 def search_google(query, limit):
     # Разделяем слова запроса и объединяем их с помощью %20
     query_words = query.split()
@@ -80,6 +87,8 @@ def remove_extra_spaces(text):
 
 
 def process_text(text):
+    # Удаление всех латинских символов
+    text = re.sub(r'[a-zA-Z]', '', text)
     # Приведение всех слов к нижнему регистру
     text = text.lower()
     text = remove_links(text)
@@ -87,6 +96,18 @@ def process_text(text):
     text = remove_formatting(text)
     text = remove_extra_spaces(text)
     return text
+
+
+def summarize_text(text, sentences_count):
+    parser = PlaintextParser.from_string(text, Tokenizer(LANGUAGE))
+    summarizer = LsaSummarizer(stemmer)
+    summarizer.stop_words = set(stopwords.words('russian'))
+
+    summary = []
+    for sentence in summarizer(parser.document, sentences_count):
+        summary.append(str(sentence))
+
+    return ' '.join(summary)
 
 
 def save_page_content(url, filename):
@@ -110,16 +131,19 @@ def save_page_content(url, filename):
     if not os.path.exists(text_folder):
         os.makedirs(text_folder)
 
-    # Сохраняем обработанный текст в текстовый файл в папке "text"
+    # Создаем выжимку текста
+    summarized_text = summarize_text(processed_text, sentences_count=10)
+
+    # Сохраняем текст в файл
+    data = {"text": summarized_text}
     with open(os.path.join(text_folder, filename), 'w', encoding='utf-8') as file:
-        file.write(processed_text)
+        json.dump(data, file, ensure_ascii=False)
+    print(f"Файл {filename} сохранен")
 
 
-# Пример использования функции
 user_query = 'значения слова привет'
-search_results = search_google(user_query, limit=3)
+search_results = search_google(user_query, limit=4)
 print(search_results)
 for i, link in enumerate(search_results, start=1):
-    filename = f"page_{i}.txt"
+    filename = f"page_{i}.json"  # изменение расширения файла
     save_page_content(link, filename)
-    print(f"Страница {i} сохранена в файл {filename}")
